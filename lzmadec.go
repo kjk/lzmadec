@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"os"
 	"os/exec"
 	"strconv"
 	"strings"
@@ -202,19 +203,17 @@ func NewArchive(path string) (*Archive, error) {
 }
 
 type readCloser struct {
+	rc  io.ReadCloser
 	cmd *exec.Cmd
-	buf bytes.Buffer
 }
 
 func (rc *readCloser) Read(p []byte) (int, error) {
-	n, err := rc.buf.Read(p)
-	return n, err
+	return rc.rc.Read(p)
 }
 
 func (rc *readCloser) Close() error {
-	fmt.Printf("readCloser.Close(): waiting for 7z to finish\n")
-	err := rc.cmd.Wait()
-	return err
+	// note: trying to Close() rc.rc returns an error 'invalid argument'
+	return rc.cmd.Wait()
 }
 
 func (a *Archive) ExtractReader(name string) (io.ReadCloser, error) {
@@ -229,12 +228,14 @@ func (a *Archive) ExtractReader(name string) (io.ReadCloser, error) {
 		return nil, errors.New("File not in the archive")
 	}
 	cmd := exec.Command("7z", "x", "-so", a.Path, name)
+	stdout, err := cmd.StdoutPipe()
 	rc := &readCloser{
+		rc:  stdout,
 		cmd: cmd,
 	}
-	cmd.Stdout = &rc.buf
-	err := cmd.Start()
+	err = cmd.Start()
 	if err != nil {
+		stdout.Close()
 		return nil, err
 	}
 	return rc, nil
@@ -245,8 +246,7 @@ func (a *Archive) ExtractToWriter(dst io.Writer, name string) error {
 	if err != nil {
 		return err
 	}
-	n, err := io.Copy(dst, r)
-	fmt.Printf("copied %d bytes from dst to r\n", n)
+	_, err = io.Copy(dst, r)
 	err2 := r.Close()
 	if err != nil {
 		return err
@@ -255,5 +255,10 @@ func (a *Archive) ExtractToWriter(dst io.Writer, name string) error {
 }
 
 func (a *Archive) ExtractToFile(dstPath string, name string) error {
-	return errors.New("NYI")
+	f, err := os.Create(dstPath)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	return a.ExtractToWriter(f, name)
 }

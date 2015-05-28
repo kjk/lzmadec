@@ -1,7 +1,11 @@
 package main
 
+/*
+A sample program that extracts all files from a given .7z file
+to current directory.
+*/
+
 import (
-	"bytes"
 	"fmt"
 	"os"
 
@@ -26,13 +30,11 @@ func main() {
 	fmt.Printf("opened archive '%s'\n", path)
 	fmt.Printf("Extracting %d entries\n", len(a.Entries))
 	for _, e := range a.Entries {
-		var buf bytes.Buffer
-		err = a.ExtractToWriter(&buf, e.Path)
+		err = a.ExtractToFile(e.Path, e.Path)
 		if err != nil {
-			fmt.Printf("a.ExtractToWriter('%s') failed with '%s'\n", e.Path, err)
+			fmt.Printf("a.ExtractToFile('%s') failed with '%s'\n", e.Path, err)
 			os.Exit(1)
 		}
-		fmt.Printf("Extracted '%s', %d bytes\n", e.Path, len(buf.Bytes()))
-		break // TODO: temporary
+		fmt.Printf("Extracted '%s'\n", e.Path)
 	}
 }
