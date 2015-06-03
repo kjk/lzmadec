@@ -20,9 +20,10 @@ const (
 
 var (
 	// Err7zNotAvailable is returned if 7z executable is not available
-	Err7zNotAvailable  = errors.New("7z executable not available")
+	Err7zNotAvailable = errors.New("7z executable not available")
+	//ErrNoEntries is returned if the archive has no files
 	ErrNoEntries       = errors.New("no entries in 7z file")
-	ErrUnexpectedLines = errors.New("unexpected number of lines")
+	errUnexpectedLines = errors.New("unexpected number of lines")
 	detectionStateOf7z int // 0 - not checked, 1 - checked and present, 2 - checked and not present
 	mu                 sync.Mutex
 )
@@ -110,7 +111,7 @@ func getEntryLines(scanner *bufio.Scanner) ([]string, error) {
 	if len(res) == 9 || len(res) == 0 {
 		return res, nil
 	}
-	return nil, ErrUnexpectedLines
+	return nil, errUnexpectedLines
 }
 
 func parseEntryLines(lines []string) (Entry, error) {
@@ -220,7 +221,8 @@ func (rc *readCloser) Close() error {
 	return rc.cmd.Wait()
 }
 
-func (a *Archive) ExtractReader(name string) (io.ReadCloser, error) {
+// GetFileReader returns a reader for reading a given file
+func (a *Archive) GetFileReader(name string) (io.ReadCloser, error) {
 	found := false
 	for _, e := range a.Entries {
 		if e.Path == name {
@@ -245,8 +247,9 @@ func (a *Archive) ExtractReader(name string) (io.ReadCloser, error) {
 	return rc, nil
 }
 
+// ExtractToWriter writes the content of a given file inside the archive to dst
 func (a *Archive) ExtractToWriter(dst io.Writer, name string) error {
-	r, err := a.ExtractReader(name)
+	r, err := a.GetFileReader(name)
 	if err != nil {
 		return err
 	}
@@ -258,6 +261,7 @@ func (a *Archive) ExtractToWriter(dst io.Writer, name string) error {
 	return err2
 }
 
+// ExtractToFile extracts a given file from the archive to a file on disk
 func (a *Archive) ExtractToFile(dstPath string, name string) error {
 	f, err := os.Create(dstPath)
 	if err != nil {
