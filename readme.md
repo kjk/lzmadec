@@ -1,6 +1,6 @@
 lzmadec is a Go package for extracting files out of .7z files using 7z program.
 
-Article describing how to use it: http://blog.kowalczyk.info/article/g/Extracting-files-from-7z-archives-in-Go.html
+Short tutorial: http://blog.kowalczyk.info/article/g/Extracting-files-from-7z-archives-in-Go.html
 
 API reference: http://godoc.org/github.com/kjk/lzmadec
 
