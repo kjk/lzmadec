@@ -21,11 +21,14 @@ const (
 var (
 	// Err7zNotAvailable is returned if 7z executable is not available
 	Err7zNotAvailable = errors.New("7z executable not available")
-	//ErrNoEntries is returned if the archive has no files
-	ErrNoEntries       = errors.New("no entries in 7z file")
+
+	// ErrNoEntries is returned if the archive has no files
+	ErrNoEntries = errors.New("no entries in 7z file")
+
 	errUnexpectedLines = errors.New("unexpected number of lines")
-	detectionStateOf7z int // 0 - not checked, 1 - checked and present, 2 - checked and not present
+
 	mu                 sync.Mutex
+	detectionStateOf7z int // 0 - not checked, 1 - checked and present, 2 - checked and not present
 )
 
 // Archive describes a single .7z archive
@@ -36,10 +39,9 @@ type Archive struct {
 
 // Entry describes a single file inside .7z archive
 type Entry struct {
-	Path string
-	Size int
-	// -1 means "size unknown"
-	PackedSize int
+	Path       string
+	Size       int
+	PackedSize int // -1 means "size unknown"
 	Modified   time.Time
 	Attributes string
 	CRC        string
@@ -53,7 +55,7 @@ func detect7zCached() error {
 	defer mu.Unlock()
 	if detectionStateOf7z == 0 {
 		cmd := exec.Command("7z")
-		_, err := cmd.CombinedOutput()
+		_, err := cmd.Run()
 		if err != nil {
 			detectionStateOf7z = 2
 		} else {
