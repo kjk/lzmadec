@@ -54,9 +54,7 @@ func detect7zCached() error {
 	mu.Lock()
 	defer mu.Unlock()
 	if detectionStateOf7z == 0 {
-		cmd := exec.Command("7z")
-		_, err := cmd.Run()
-		if err != nil {
+		if _, err := exec.LookPath("7z"); err != nil {
 			detectionStateOf7z = 2
 		} else {
 			detectionStateOf7z = 1
