@@ -231,7 +231,7 @@ func (a *Archive) GetFileReader(name string) (io.ReadCloser, error) {
 		}
 	}
 	if !found {
-		return nil, errors.New("File not in the archive")
+		return nil, errors.New("file not in the archive")
 	}
 	cmd := exec.Command("7z", "x", "-so", a.Path, name)
 	stdout, err := cmd.StdoutPipe()
