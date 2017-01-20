@@ -135,7 +135,7 @@ func parseEntryLines(lines []string) (Entry, error) {
 				e.PackedSize, err = strconv.Atoi(v)
 			}
 		case "modified":
-			e.Modified, err = time.Parse(timeLayout, v)
+			e.Modified, _ = time.Parse(timeLayout, v)
 		case "attributes":
 			e.Attributes = v
 		case "crc":
