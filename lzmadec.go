@@ -124,6 +124,9 @@ func parseEntryLines(lines []string) (Entry, error) {
 		}
 		name := strings.ToLower(parts[0])
 		v := strings.TrimSpace(parts[1])
+		if v == "" {
+			v = "0"
+		}
 		switch name {
 		case "path":
 			e.Path = v
