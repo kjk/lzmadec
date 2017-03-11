@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"os"
 	"os/exec"
 	"strconv"
 	"strings"
@@ -18,6 +17,14 @@ const (
 	timeLayout = "2006-01-02 15:04:05"
 )
 
+type detectionStateOf7z int
+
+const (
+	cmdNotChecked detectionStateOf7z = iota
+	cmdPresent
+	cmdNotPresent
+)
+
 var (
 	// Err7zNotAvailable is returned if 7z executable is not available
 	Err7zNotAvailable = errors.New("7z executable not available")
@@ -27,8 +34,8 @@ var (
 
 	errUnexpectedLines = errors.New("unexpected number of lines")
 
-	mu                 sync.Mutex
-	detectionStateOf7z int // 0 - not checked, 1 - checked and present, 2 - checked and not present
+	mu  sync.Mutex
+	d7z detectionStateOf7z
 )
 
 // Archive describes a single .7z archive
@@ -53,14 +60,14 @@ type Entry struct {
 func detect7zCached() error {
 	mu.Lock()
 	defer mu.Unlock()
-	if detectionStateOf7z == 0 {
+	if d7z == cmdNotChecked {
 		if _, err := exec.LookPath("7z"); err != nil {
-			detectionStateOf7z = 2
+			d7z = cmdNotPresent
 		} else {
-			detectionStateOf7z = 1
+			d7z = cmdPresent
 		}
 	}
-	if detectionStateOf7z == 1 {
+	if d7z == cmdPresent {
 		// checked and present
 		return nil
 	}
@@ -148,7 +155,9 @@ func parseEntryLines(lines []string) (Entry, error) {
 		case "method":
 			e.Method = v
 		case "block":
-			e.Block, err = strconv.Atoi(v)
+			if v != "" {
+				e.Block, err = strconv.Atoi(v)
+			}
 		default:
 			err = fmt.Errorf("unexpected entry line '%s'", name)
 		}
@@ -225,18 +234,8 @@ func (rc *readCloser) Close() error {
 }
 
 // GetFileReader returns a reader for reading a given file
-func (a *Archive) GetFileReader(name string) (io.ReadCloser, error) {
-	found := false
-	for _, e := range a.Entries {
-		if e.Path == name {
-			found = true
-			break
-		}
-	}
-	if !found {
-		return nil, errors.New("file not in the archive")
-	}
-	cmd := exec.Command("7z", "x", "-so", a.Path, name)
+func (a *Archive) GetFileReader(index int) (io.ReadCloser, error) {
+	cmd := exec.Command("7z", "x", "-so", a.Path, a.Entries[index].Path)
 	stdout, err := cmd.StdoutPipe()
 	rc := &readCloser{
 		rc:  stdout,
@@ -248,28 +247,4 @@ func (a *Archive) GetFileReader(name string) (io.ReadCloser, error) {
 		return nil, err
 	}
 	return rc, nil
-}
-
-// ExtractToWriter writes the content of a given file inside the archive to dst
-func (a *Archive) ExtractToWriter(dst io.Writer, name string) error {
-	r, err := a.GetFileReader(name)
-	if err != nil {
-		return err
-	}
-	_, err = io.Copy(dst, r)
-	err2 := r.Close()
-	if err != nil {
-		return err
-	}
-	return err2
-}
-
-// ExtractToFile extracts a given file from the archive to a file on disk
-func (a *Archive) ExtractToFile(dstPath string, name string) error {
-	f, err := os.Create(dstPath)
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-	return a.ExtractToWriter(f, name)
 }
