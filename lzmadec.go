@@ -191,7 +191,7 @@ func NewArchive(path string) (*Archive, error) {
 	if err != nil {
 		return nil, err
 	}
-	cmd := exec.Command("7z", "l", "-slt", path)
+	cmd := exec.Command("7z", "l", "-slt", "-sccUTF-8", path)
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		return nil, err
