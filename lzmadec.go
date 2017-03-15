@@ -40,7 +40,7 @@ type Archive struct {
 // Entry describes a single file inside .7z archive
 type Entry struct {
 	Path       string
-	Size       int
+	Size       int64
 	PackedSize int // -1 means "size unknown"
 	Modified   time.Time
 	Attributes string
@@ -131,7 +131,7 @@ func parseEntryLines(lines []string) (Entry, error) {
 		case "path":
 			e.Path = v
 		case "size":
-			e.Size, err = strconv.Atoi(v)
+			e.Size, err = strconv.ParseInt(v, 10, 64)
 		case "packed size":
 			e.PackedSize = -1
 			if v != "" {
