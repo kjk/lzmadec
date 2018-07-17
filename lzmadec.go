@@ -35,6 +35,7 @@ var (
 type Archive struct {
 	Path    string
 	Entries []Entry
+	password *string
 }
 
 // Entry describes a single file inside .7z archive
@@ -185,8 +186,16 @@ func parse7zListOutput(d []byte) ([]Entry, error) {
 	return res, nil
 }
 
-// NewArchive uses 7z to extract a list of files in .7z archive
 func NewArchive(path string) (*Archive, error) {
+	return newArchive(path, nil)
+}
+
+func NewEncryptedArchive(path string, password string) (*Archive, error) {
+	return newArchive(path, &password)
+}
+
+// NewArchive uses 7z to extract a list of files in .7z archive
+func newArchive(path string, password *string) (*Archive, error) {
 	err := detect7zCached()
 	if err != nil {
 		return nil, err
@@ -203,6 +212,7 @@ func NewArchive(path string) (*Archive, error) {
 	return &Archive{
 		Path:    path,
 		Entries: entries,
+		password: password,
 	}, nil
 }
 
@@ -236,7 +246,14 @@ func (a *Archive) GetFileReader(name string) (io.ReadCloser, error) {
 	if !found {
 		return nil, errors.New("file not in the archive")
 	}
-	cmd := exec.Command("7z", "x", "-so", a.Path, name)
+
+	params := []string{"x", "-so"}
+	if a.password != nil {
+		params = append(params, fmt.Sprintf("-p%s", *a.password))
+	}
+	params = append(params, a.Path, name)
+
+	cmd := exec.Command("7z", params...)
 	stdout, err := cmd.StdoutPipe()
 	rc := &readCloser{
 		rc:  stdout,
