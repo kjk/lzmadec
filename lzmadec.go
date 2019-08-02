@@ -33,8 +33,8 @@ var (
 
 // Archive describes a single .7z archive
 type Archive struct {
-	Path    string
-	Entries []Entry
+	Path     string
+	Entries  []Entry
 	password *string
 }
 
@@ -200,7 +200,22 @@ func newArchive(path string, password *string) (*Archive, error) {
 	if err != nil {
 		return nil, err
 	}
-	cmd := exec.Command("7z", "l", "-slt", "-sccUTF-8", path)
+
+	params := []string{"l", "-slt", "-sccUTF-8"}
+	var tmpPassword *string
+	if password == nil || *password == "" {
+		// 7z interactively asks for a password when an archive is encrypted
+		// and no password has been supplied. But it has no problems when
+		// a password has been supplied and the archive is not encrypted.
+		// So if no password has been provided, use a non-sensical one to
+		// prevent 7z from blocking on encrypted archives and instead fail
+		*tmpPassword = "                  "
+	} else {
+		tmpPassword = password
+	}
+	params = append(params, fmt.Sprintf("-p%s", *tmpPassword))
+	params = append(params, path)
+	cmd := exec.Command("7z", params...)
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		return nil, err
@@ -210,9 +225,9 @@ func newArchive(path string, password *string) (*Archive, error) {
 		return nil, err
 	}
 	return &Archive{
-		Path:    path,
-		Entries: entries,
-		password: password,
+		Path:     path,
+		Entries:  entries,
+		password: tmpPassword,
 	}, nil
 }
 
