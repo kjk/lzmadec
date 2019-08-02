@@ -33,8 +33,8 @@ var (
 
 // Archive describes a single .7z archive
 type Archive struct {
-	Path    string
-	Entries []Entry
+	Path     string
+	Entries  []Entry
 	password *string
 }
 
@@ -200,7 +200,13 @@ func newArchive(path string, password *string) (*Archive, error) {
 	if err != nil {
 		return nil, err
 	}
-	cmd := exec.Command("7z", "l", "-slt", "-sccUTF-8", path)
+
+	params := []string{"l", "-slt", "-sccUTF-8"}
+	if password != nil {
+		params = append(params, fmt.Sprintf("-p%s", *password))
+	}
+	params = append(params, path)
+	cmd := exec.Command("7z", params...)
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		return nil, err
@@ -210,8 +216,8 @@ func newArchive(path string, password *string) (*Archive, error) {
 		return nil, err
 	}
 	return &Archive{
-		Path:    path,
-		Entries: entries,
+		Path:     path,
+		Entries:  entries,
 		password: password,
 	}, nil
 }
