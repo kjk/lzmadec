@@ -270,6 +270,10 @@ func (a *Archive) GetFileReader(name string) (io.ReadCloser, error) {
 
 	cmd := exec.Command("7z", params...)
 	stdout, err := cmd.StdoutPipe()
+	if err != nil {
+		return nil, err
+	}
+
 	rc := &readCloser{
 		rc:  stdout,
 		cmd: cmd,
