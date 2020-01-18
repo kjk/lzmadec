@@ -216,7 +216,7 @@ func newArchive(path string, password *string) (*Archive, error) {
 	params = append(params, fmt.Sprintf("-p%s", tmpPassword))
 	params = append(params, path)
 	cmd := exec.Command("7z", params...)
-	out, err := cmd.CombinedOutput()
+	out, err := cmd.Output()
 	if err != nil {
 		return nil, err
 	}
