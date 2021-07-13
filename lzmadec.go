@@ -109,10 +109,8 @@ func getEntryLines(scanner *bufio.Scanner) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	if len(res) == 9 || len(res) == 0 {
-		return res, nil
-	}
-	return nil, errUnexpectedLines
+
+	return res, nil
 }
 
 func parseEntryLines(lines []string) (Entry, error) {
@@ -150,8 +148,6 @@ func parseEntryLines(lines []string) (Entry, error) {
 			e.Method = v
 		case "block":
 			e.Block, err = strconv.Atoi(v)
-		default:
-			err = fmt.Errorf("unexpected entry line '%s'", name)
 		}
 		if err != nil {
 			return e, err
